@@ -10,12 +10,40 @@ def main():
 	while True:
 		rawData, adrr = conn.recvfrom(65536)
 		destMac, srcMac, ethProto, data = ethernetFrame(rawData)
-		destIp, srcIp = pacoteIPV4(rawData)
 		print('\nSniffer...')
-		print('\nDestinoMac:{} \nOrigemMac: {} \nProtocolo: {}'.format(destMac, srcMac, ethProto ))
+		print('\nDestinoMac:{} \nOrigemMac: {} \nProtocolo de Ethernet: {}  '.format(destMac, srcMac, ethProto))
+		if ethProto == 8:
+			(ttl, protocoloIpv4, srcIp, destIp, tamanhoHeader, data) = pacoteIPV4(data)
+
+			print('\nTamanhoHeader:{} \nTTL: {} \nProtocolo: {} \nOrigem {} \nDestino{} '.format(tamanhoHeader, ttl, protocoloIpv4, srcIp, destIp))
+
+			if protocoloIpv4 == 1:
+				tipoIcmp, codigo, checksum, data = pacoteICMP(data)
+				print('Pacote ICMP:')
+				print('\nTipo: {}\nCodigo: {}\nChecksum: {}'.format(tipoIcmp, codigo, checksum))
+				print('Data: {}\n'.format(data))
+
+			elif protocoloIpv4 == 6:
+				(portaSrc, portaDest, sequencia, acknowledgement, flagsUrg, flagsAck, flagsPsh, flagsRst, flagsSyn, flagsFin, data) = protocoloTCP(data)
+				print('Pacote TCP:')
+				print('\nPorta de destino: {}\nPorta de origem: {}\nSequencia: {} \nACK: {}'.format(portaSrc, portaDest, sequencia, acknowledgement))
+				print('\nFlags: \n URG: {}\nACK: {}\nPUSH: {} \nRST: {}\nSYN: {}\nFIN: {}'.format(flagsUrg, flagsAck, flagsPsh, flagsRst, flagsSyn, flagsFin))
+				print('Data: {}\n'.format(data))
+
+			elif protocoloIpv4 == 17:
+				srcPort, destPort, size, data = protocoloUPD(data)
+				print('Protocolo UDP:')
+				print('\nPorta de destino: {}\n Porta de origem: {}\nTamanho: {}'.format(srcPort, destPort, size))
+				print('Data: {}\n'.format(data))
+			else:
+				print('Data: {}\n'.format(data))
+		else:
+			print('Data: {}\n'.format(data))
+
 		time.sleep(0.5)
 		os.system('clear')
 
+		
 
 
 #ler o pacote de rede
@@ -33,7 +61,7 @@ def pacoteIPV4(data):
 	tamanhoHdrVersao = data[0]
 	tamanhoHeader = (tamanhoHdrVersao & 15)*4
 	ttl, protocoloIpv4, srcIp, destIp = struct.unpack('! 8x B B 2x 4s 4s', data[:20])
-	return protocoloIpv4, IPv4(srcIp), IPv4(destIp), data[tamanhoHeader:], tamanhoHeader
+	return ttl, protocoloIpv4, IPv4(srcIp), IPv4(destIp), tamanhoHeader, data[20:]
 
 #formata o ipv4
 
@@ -56,9 +84,13 @@ def protocoloTCP(data):
 	flagsSyn = (offsetReservedFlags & 2) >> 1
 	flagsRst = (offsetReservedFlags & 4) >> 2
 	flagsFin = offsetReservedFlags & 1
-	return portaSrc, portaDest, sequencia, acknowledgement, flagsAck, flagsFin, flagsPsh, flagsRst, flagsUrg, flagsSyn, data[offset:]
+	return (portaSrc, portaDest, sequencia, acknowledgement, flagsAck, flagsFin, flagsPsh, flagsRst, flagsUrg, flagsSyn, data[offset:])
 
-	
+#ler o protocolo UDP
+
+def protocoloUPD(data):
+	srcPort, destPort, size = struct.unpack('! H H 2x H', data[:8])
+	return srcPort, destPort, size, data[8:]	
 
 
 
