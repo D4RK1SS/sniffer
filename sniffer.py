@@ -4,7 +4,7 @@ import textwrap
 import os
 import time
 
-def main():
+def sniffer():
 	conn = socket.socket(socket.AF_PACKET, socket.SOCK_RAW, socket.ntohs(3))
 
 	while True:
@@ -15,7 +15,7 @@ def main():
 		if ethProto == 8:
 			(ttl, protocoloIpv4, srcIp, destIp, tamanhoHeader, data) = pacoteIPV4(data)
 
-			print('\nTamanhoHeader:{} \nTTL: {} \nProtocolo: {} \nOrigem {} \nDestino{} '.format(tamanhoHeader, ttl, protocoloIpv4, srcIp, destIp))
+			print('\nTamanhoHeader:{} \nTTL: {} \nProtocolo: {} \nOrigem: {} \nDestino: {} '.format(tamanhoHeader, ttl, protocoloIpv4, srcIp, destIp))
 
 			if protocoloIpv4 == 1:
 				tipoIcmp, codigo, checksum, data = pacoteICMP(data)
@@ -25,7 +25,7 @@ def main():
 
 			elif protocoloIpv4 == 6:
 				(portaSrc, portaDest, sequencia, acknowledgement, flagsUrg, flagsAck, flagsPsh, flagsRst, flagsSyn, flagsFin, data) = protocoloTCP(data)
-				print('Pacote TCP:')
+				print('Protocolo TCP:')
 				print('\nPorta de destino: {}\nPorta de origem: {}\nSequencia: {} \nACK: {}'.format(portaSrc, portaDest, sequencia, acknowledgement))
 				print('\nFlags: \n URG: {}\nACK: {}\nPUSH: {} \nRST: {}\nSYN: {}\nFIN: {}'.format(flagsUrg, flagsAck, flagsPsh, flagsRst, flagsSyn, flagsFin))
 				print('Data: {}\n'.format(data))
@@ -91,7 +91,3 @@ def protocoloTCP(data):
 def protocoloUPD(data):
 	srcPort, destPort, size = struct.unpack('! H H 2x H', data[:8])
 	return srcPort, destPort, size, data[8:]	
-
-
-
-main()
